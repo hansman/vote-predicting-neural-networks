@@ -1,109 +1,151 @@
+from dnn_app_utils import *
+import h5py
 import json
 import numpy as np
-from dnn_app_utils import *
+import os.path
 
 np.random.seed(1)
 
 class VoteClassifier:
-    def __init__(self, mepId):
-        self.mepId = mepId
-        self.train_x, self.train_y, self.test_x, self.test_y = load_data(mepId)
-        self.sample_amount = self.train_x.shape[0]
-        self.test_amount = self.test_x.shape[0]
-        self.parameters = {}
-        self.is_trained = False
-
-    def show_data_info(self):
-        print ("Number of training examples: " + str(self.sample_amount))
-        print ("Number of testing examples: " + str(self.test_amount))
-        print ("train_x_orig shape: " + str(self.train_x.shape))
-        print ("train_y shape: " + str(self.train_y.shape))
-        print ("test_x_orig shape: " + str(self.test_x.shape))
-        print ("test_y shape: " + str(self.test_y.shape))
-        return self
-
-    def flattern_x(self):
-        self.train_x = self.train_x.reshape(self.sample_amount, -1).T
-        self.test_x = self.test_x.reshape(self.test_amount, -1).T
-        return self
-
-    def L_layer_model(self, learning_rate=0.0075, num_iterations=300, layers=1):  # lr was 0.009
-
-        np.random.seed(1)
-        nx = np.shape(self.train_x)[0]
 
 
-        layers_dims = [nx]
+  def __init__(self, mep_id, iterations, layers):
+    self.K = 3                      # number of classes
+    self.mep_id = mep_id            # parliamentarian id
+    self.iterations = iterations    # training iterations
+    self.layers = layers            # number of network hidden layers
+    self.train_x, self.train_y, self.test_x, self.test_y = load_data(mep_id) # labeled samples
+    self.m = self.train_x.shape[0]  # number of training samples
+    self.test_amount = self.test_x.shape[0] # number of testing samples
+    self.parameters = {}            # network paramters
+    self.is_trained = False
 
-        for i in range(0, layers):
-            layers_dims.append(nx)
 
-        layers_dims.append(1)
+  def show_data_info(self):
+    print ('Number of training examples: ' + str(self.m))
+    print ('Number of testing examples: ' + str(self.test_amount))
+    print ('train_x_orig shape: ' + str(self.train_x.shape))
+    print ('train_y shape: ' + str(self.train_y.shape))
+    print ('test_x_orig shape: ' + str(self.test_x.shape))
+    print ('test_y shape: ' + str(self.test_y.shape))
+    return self
 
-        K = np.shape(self.train_y)[0]
 
-        for k in range(0, K):
-            costs = []
-            parameters = initialize_parameters_deep(layers_dims)
-            for i in range(0, num_iterations):
+  def flattern_x(self):
+    self.train_x = self.train_x.reshape(self.m, -1).T
+    self.test_x = self.test_x.reshape(self.test_amount, -1).T
+    return self
 
-                AL, caches = L_model_forward(self.train_x, parameters)
 
-                cost = compute_cost(AL, self.train_y[k])
+  def L_layer_model(self, learning_rate=0.0075):
 
-                grads = L_model_backward(AL, self.train_y[k], caches)
+    self.load_model()
+    if self.is_trained:
+      return self
 
-                self.parameters[k] = update_parameters(parameters, grads, learning_rate)
+    nx = np.shape(self.train_x)[0]
 
-                if i % 100 == 0:
-                    costs.append(cost)
-                    # print ("Cost after iteration %i: %s" % (i, cost))
+    # hidden layers
+    layers_dims = []
+    for i in range(0, self.layers):
+      layers_dims.append(nx)
 
-        self.is_trained = True
+    # output layer
+    layers_dims.append(1)
 
-        return self
+    K = np.shape(self.train_y)[0]
 
-    def predict_standard(self):
-        return predict(self.test_x, self.test_y, self.parameters, 3)
+    for k in range(0, K):
+      costs = []
+      parameters = initialize_parameters_deep(layers_dims)
+      for i in range(0, self.iterations):
 
-    def save_model(self):
-        f = h5py.File("predict-vote-" + self.mepId + ".h5", "w")
-        f.create_dataset("layers", data=5)
-        for key, value in self.parameters.items():
-            f.create_dataset(key, data=value)
+        AL, caches = L_model_forward(self.train_x, parameters)
 
-    def load_model(self):
-        f = h5py.File("predict-vote-" + self.mepId + ".h5", "r")
-        number_of_layers = np.squeeze(f["layers"])
-        for i in range(1, number_of_layers):
-            self.parameters["W"+str(i)] = np.array(f["W"+str(i)])
-            self.parameters["b"+str(i)] = np.array(f["b"+str(i)])
+        cost = compute_cost(AL, self.train_y[k])
 
-        self.is_trained = True
-        return self
+        grads = L_model_backward(AL, self.train_y[k], caches)
+
+        self.parameters[k] = update_parameters(parameters, grads, learning_rate)
+
+        if i % 100 == 0:
+          costs.append(cost)
+          # print ('Cost after iteration %i: %s' % (i, cost))
+
+    self.is_trained = True
+
+    return self
+
+
+  def predict_standard(self):
+    return predict(self.test_x, self.test_y, self.parameters, self.K)
+
+
+  def get_model_filename(self):
+    return 'models/' + str(self.mep_id) + '-' + str(self.layers) + '-' + str(self.iterations) + '.h5'
+
+
+  def save_model(self):
+    filename = self.get_model_filename()
+    nx = np.shape(self.train_x)[0]
+    number_of_layers = self.layers
+    if not os.path.isfile(filename):
+      f = h5py.File(filename, 'w')
+      f.create_dataset('layers', data=(nx*3))
+      for k in range(0, self.K):
+        for key, value in self.parameters[k].items():
+            f.create_dataset(key + '-' + str(k), data=value)
+    return self
+
+
+  def load_model(self):
+    filename = self.get_model_filename()
+    if not os.path.isfile(filename):
+      return self
+
+    self.parameters = {}
+
+    f = h5py.File(filename, 'r')
+    number_of_layers = self.layers
+    for k in range(0, self.K):
+      self.parameters[k] = {}
+      for i in range(1, number_of_layers + 1):
+        self.parameters[k]['W'+str(i)] = np.array(f['W'+str(i)+'-'+str(k)])
+        self.parameters[k]['b'+str(i)] = np.array(f['b'+str(i)+'-'+str(k)])
+
+    self.is_trained = True
+    return self
+
+
+def test_hyper_parameters():
+  # train vote prediction models for meps
+  vote_count = 33
+
+  iterations = 200;
+  while iterations < 400:
+    layers = 1
+    while layers <= 20:
+      predictions = []
+      with open('./raw/ids.json') as data_file:
+        ids = json.load(data_file)
+        meps = ids['mepIds']
+        for i in range(0, len(meps)):
+          mep = meps[i]
+          p = VoteClassifier(mep['mepId'], iterations, layers) \
+            .flattern_x() \
+            .L_layer_model(learning_rate=0.0075) \
+            .save_model() \
+            .predict_standard()
+
+          predictions.append(p)
+          if vote_count != mep['votes']:
+            print ('accuracy', np.average(predictions), vote_count)
+            vote_count = mep['votes']
+          if mep['votes'] == 31:
+            break
+      layers += 1
+    iterations += 200
 
 
 if __name__ == '__main__':
-    prev = 33
-
-    # train vote prediction models for meps
-    iters = 2000;
-    while 1:
-        iters += 1000
-        layers = 0
-        while layers < 25:
-            layers += 1
-            predictions = []
-            with open('./raw/ids.json') as data_file:
-                ids = json.load(data_file)
-                meps = ids['mepIds']
-                for i in range(0, len(meps)):
-                    mep = meps[i]
-
-                    p = VoteClassifier(mep['mepId']).flattern_x().L_layer_model(learning_rate=0.0075, num_iterations=iters, layers=layers).predict_standard()
-                    predictions.append(p)
-                    if prev != mep['votes']:
-                        print ("total accuracy", np.average(predictions), mep['votes'] + 1)
-                        prev = mep['votes']
-                    if mep['votes'] == 31:
-                        break
+  test_hyper_parameters()
