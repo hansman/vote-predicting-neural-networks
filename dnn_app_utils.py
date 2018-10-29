@@ -437,7 +437,7 @@ def predict(X, y, parameters, K):
         if y[k,i] == 1:
             score+=1
 
-    print("Accuracy: %s" % str(score/float(m)))
+    # print("Accuracy: %s" % str(score/float(m)))
     return p
 
 def print_mislabeled_images(classes, X, y, p):
