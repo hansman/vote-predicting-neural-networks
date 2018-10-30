@@ -2,10 +2,10 @@
 # class assignments taught by Andrew Ng from deeplearning.ai
 # https://www.coursera.org/learn/neural-networks-deep-learning
 #
-# The utitlies got extended to work for one vs all classification.
-# This file implements hyper paramter initialization, forward
-# propagation, cost computation, backward propagation, paramters update
-# and class prediction.
+# Extended by Johann Steinbrecher (@hansman) to support one vs
+# all classification. This file implements paramter initialization,
+# forward propagation, cost computation, backward propagation, paramters
+# update and class prediction.
 
 
 import numpy as np

@@ -5,6 +5,8 @@ pipenv install
 pipenv run python main.py
 ```
 
+I have been passionate about gathering and analysing data of voting behaviour in politics, specifically of the European Parliament. With the break through of neural networks as a supervised learning technique to train AI models this dataset becomes very powerful. The publicly accessible results shall serve as an alternative and support alternatives to corporate news on politics.
+
 This codebase builds Neural Network Models for Parliamentarians of the European Union (EU) predicting their votes on future legislation. The model calculates a parliamentarians vote on a certain legislation using the Position of relevant Organizations and Lobbyists as input. The trained learning models achieve in average an accuracy of 92.5% over current Parliamentarians of the EU.
 
 Neural networks are a machine learning technique for supervised learning. A network is trained with labeled samples. Each sample trains the neurons in the network to produce an output as close as possible to its label. It does so by minimizing the cost, the difference between the label value and the calculated value. Each training iteration reduces this cost by updating the network parameters. The network is trained until new training iterations do not decrease the cost much further, i.e. the cost is `minimal`. This project uses multiclass classification, one-vs-all, with `K=3` classes: for, against, abstain.
@@ -31,9 +33,10 @@ The accuracy for Parliamentarians with 33 votes in the dataset is `94.3%`, 32 vo
 
 ### Hyper parameter optimization
 
-The best predictions are achieved by a network with `13` hidden layers predicting votes with an accuracy of `92.5%`. The number of features `nx` is between 40 and 100 for each Parliamentarian. Each hidden layer is of size `nx`.
+The best predictions are achieved by a network with `13` hidden layers predicting votes with an accuracy of `92.5%`. The number of features `nx` is between 40 and 100 for each Parliamentarian. Each hidden layer is of size `nx`. We use the learning rate `alpha=0.03` because it is the smallest learning rate that achieves close to minimal cost, where the cost curve flattens out, under 3000 learning iterations.
 
 ![Alt text](graphs/votePredictionAccuracy.png?raw=true "Vote Prediction Accuracy")
+![Alt text](graphs/votePredictionLearningRate.png?raw=true "Vote Prediction Learning Rate")
 
 ### Credits
 
